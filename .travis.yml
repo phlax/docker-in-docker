@@ -1,0 +1,31 @@
+# https://travis-ci.org/#!/phlax/docker-in-docker
+
+dist: bionic
+
+before_install:
+  - # echo '{"experimental":true,"storage-driver":"devicemapper"}' | sudo tee /etc/docker/daemon.json
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  - >
+    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    && sudo apt update
+    && sudo apt -y -o Dpkg::Options::="--force-confnew" install docker-ce criu moreutils
+
+install:
+  - make image
+
+script:
+  - docker images
+  - export COMPOSE_FILE=./composition/docker-compose.yml
+  - docker-compose up -d
+  - docker-compose exec subdocker docker ps
+
+before_deploy:
+  - echo $DOCKER_ACCESS_TOKEN | docker login -u phlax --password-stdin
+
+deploy:
+  provider: script
+  script: make hub-image
+  skip_cleanup: true
+  on:
+    all_branches: true
+    condition: $TRAVIS_BRANCH =~ ^(master)$
