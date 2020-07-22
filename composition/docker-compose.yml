@@ -1,0 +1,30 @@
+#
+
+version: "2.4"
+services:
+  app:
+    image: busybox
+    depends_on:
+      subdocker:
+        condition: service_healthy
+
+  subdocker:
+    image: phlax/docker-in-docker
+    tty: true
+    cap_add:
+      - NET_ADMIN
+
+    volumes:
+      # persist docker images etc
+      - ${PWD}/docker:/var/lib/docker
+
+      # systemd requirement
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+    tmpfs:
+      # systemd requires these to be on tmpfs
+      - /run
+      - /run/lock
+      - /tmp
+    ports:
+      - 80:80
